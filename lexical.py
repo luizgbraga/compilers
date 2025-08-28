@@ -1,3 +1,4 @@
+import sys
 from typing import Dict, List, Optional
 
 from input_stream import InputStream
@@ -40,6 +41,27 @@ class SymbolTable:
             self.identifiers[name] = self.identifier_count
             self.identifier_count += 1
         return self.identifiers[name]
+
+    def __str__(self) -> str:
+        result = ""
+
+        if self.identifiers:
+            result += "Identifiers:\n"
+            for name, index in sorted(self.identifiers.items(), key=lambda x: x[1]):
+                result += f"  {index}: {name}\n"
+        else:
+            result += "Identifiers: None\n"
+
+        result += "\n"
+
+        if self.constants:
+            result += "Constants:\n"
+            for i, constant in enumerate(self.constants):
+                result += f"  {i}: {constant}\n"
+        else:
+            result += "Constants: None\n"
+
+        return result
 
 
 class LexicalAnalyzer:
@@ -146,8 +168,9 @@ class LexicalAnalyzer:
         elif ch == "!":
             token = NOT
         elif ch == "'":
-            char_val: str = self.stream.advance()
+            char_val: str = self.stream.peek()
             self.secondary_token = self.symbol_table.add_constant(char_val)
+            self.stream.advance()
             self.stream.advance()
             token = CHARACTER
         else:
@@ -169,3 +192,22 @@ class LexicalAnalyzer:
             token = self.next_token()
         if not self.lexical_error:
             print("Compiled successfully.")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        sys.exit(1)
+
+    filename = sys.argv[1]
+
+    try:
+        with open(filename, "r") as file:
+            analyzer = LexicalAnalyzer(file)
+            analyzer.run()
+            print("\n" + str(analyzer.symbol_table))
+    except FileNotFoundError:
+        print(f"Error: File '{filename}' not found.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
